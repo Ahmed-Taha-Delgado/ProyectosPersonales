@@ -26,26 +26,32 @@ def bayesCompleto():
             listaProbabilidades.append(pA)
             listaProbabilidadesCondicionales.append(pAB)
 
+        global opcion
+        opcion = tk.StringVar()
+
+        tk.Label(subVentana, text = "Calcular con probabilidad \ntotal negada?").grid(row = valor + 1, column = 0, padx = 10, pady = 10, columnspan = 2)
+        tk.Radiobutton(subVentana, variable = opcion, text = "Si", value = "si").grid(row = valor + 1, column = 2, pady = 10)
+        tk.Radiobutton(subVentana, variable = opcion, text = "No", value = "no").grid(row = valor + 1, column = 3, padx = 10, pady = 10)
+
         textoSeleccion = tk.Label(subVentana, text = "Calcular bayes del \nconjunto A():")
         textoSeleccion.grid(row = valor, column = 0, columnspan=3, padx = 10, pady = 10)
         global seleccion
         seleccion = tk.Spinbox(subVentana, from_ = 1, to = 10, width = 5)
         seleccion.grid(row = valor, column = 1, columnspan = 4, padx = 10, pady = 10)
+
         
+         
         boton = tk.Button(subVentana, text = "Calcular", command = leer)
-        boton.grid(row=valor + 1 , column = 0, columnspan = 4, pady = valor + 10)
+        boton.grid(row=valor + 2 , column = 0, columnspan = 4, pady = valor + 10)
 
         regresar = tk.Button(subVentana, text = "Regresar", command = menu)
         regresar.grid(sticky = "e")
-
-
-        global bayes
-        bayes = int(seleccion.get())
 
     def leer():
         
         valor = int(texto.get())
         suma = 0
+        bayes = int(seleccion.get())
 
         for i in range(0, valor):
 
@@ -88,6 +94,14 @@ def bayesCompleto():
             ventana.after(2000, error.destroy)
             return
         
+        opcionP = opcion.get()
+        if opcionP != "no" and opcionP != "si":
+            error = tk.Label(ventana, text = "Selecciona una opcion \nde probabilidad total")
+            error.pack()
+            ventana.after(2000, error.destroy)
+            return
+
+
         for i in range(0, valor):
             numero = float(listaProbabilidades[i].get())
             numero2 = float(listaProbabilidadesCondicionales[i].get())
@@ -101,7 +115,6 @@ def bayesCompleto():
 
         probabilidadTotal = 0
 
-
         for i in range(0, len(listaProbabilidades)):     
             
             probabilidadInterseccion = listaProbabilidades[i] * listaProbabilidadesCondicionales[i]
@@ -109,13 +122,20 @@ def bayesCompleto():
             pI.grid(row = i, column = 0, padx = 10, pady = 6)
             probabilidadTotal += probabilidadInterseccion; 
 
+        
         pTotal = tk.Label(ventanaResultados, font = (20), text = "Probabilidad Total P(B)= " + str(probabilidadTotal) + "\nProbabilidad Total Negada P(B')= " + str(1 - probabilidadTotal))
         pTotal.grid(row = 1, column = 1, padx = 10, pady = 6)
+        
+        if opcionP == "si":
+            probabilidadBayes = (listaProbabilidades[bayes - 1] - (listaProbabilidades[bayes - 1] * listaProbabilidadesCondicionales[bayes - 1])) / (1 - probabilidadTotal)
 
-        probabilidadBayes = (listaProbabilidades[bayes] * listaProbabilidadesCondicionales[bayes]) / probabilidadTotal
+            pBayes = tk.Label(ventanaResultados, font = (20), text = "Probabilidad Buscada P(A'" + str(bayes) + "|B')= " + str(probabilidadBayes))
+            pBayes.grid(row = 2, column = 1, padx = 10, pady = 6)
+        else:
+            probabilidadBayes = (listaProbabilidades[bayes - 1] * listaProbabilidadesCondicionales[bayes - 1]) / probabilidadTotal
 
-        pBayes = tk.Label(ventanaResultados, font = (20), text = "Probabilidad Buscada P(B|A" + str(bayes) + ")= " + str(probabilidadBayes))
-        pBayes.grid(row = 2, column = 1, padx = 10, pady = 6)
+            pBayes = tk.Label(ventanaResultados, font = (20), text = "Probabilidad Buscada P(A" + str(bayes) + "|B')= " + str(probabilidadBayes))
+            pBayes.grid(row = 2, column = 1, padx = 10, pady = 6)
         
         ventanaResultados.pack(pady = 20)
         
