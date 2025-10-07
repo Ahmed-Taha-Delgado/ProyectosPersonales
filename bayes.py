@@ -43,7 +43,7 @@ def bayesCompleto():
         bayes = int(seleccion.get())
 
     def leer():
-
+        
         valor = int(texto.get())
         suma = 0
 
@@ -56,21 +56,36 @@ def bayesCompleto():
             if entrada1 == '' or entrada2 == '':
                 error = tk.Label(ventana, text = "Sin datos suficientes")
                 error.pack()
+                ventana.after(2000, error.destroy)
                 return
             else:
-                numero = float(entrada1)
-                numero2 = float(entrada2)
-                suma += numero
+
+                try:
+                    numero = float(entrada1)
+                    numero2 = float(entrada2)
+                    suma += numero
+                    if entrada1.count('.') > 1 or not all(c.isdigit() or c == '.' for c in entrada1) or entrada2.count('.') > 1 or not all(c.isdigit() or c == '.' for c in entrada2):
+                        error = tk.Label(ventana, text = "Solo un punto decimal permitido")
+                        error.pack()
+                        ventana.after(2000, error.destroy)
+                        return
+                except ValueError:
+                    error = tk.Label(ventana, text = "Solo ingresa numeros")
+                    error.pack()
+                    ventana.after(2000, error.destroy)
+                    return
 
                 if numero <= 0 or numero > 1 or numero2 <= 0 or numero2 > 1 or numero2 > numero:
                     error = tk.Label(ventana, text = "Datos invalidos")
                     error.pack()
+                    ventana.after(2000, error.destroy)
                     return
                 
         suma = round(suma)
         if suma != 1:
             error = tk.Label(ventana, text = "Datos invalidos, suma de probabilidad diferente a 1")
             error.pack()
+            ventana.after(2000, error.destroy)
             return
         
         for i in range(0, valor):
@@ -89,8 +104,6 @@ def bayesCompleto():
 
         for i in range(0, len(listaProbabilidades)):     
             
-            
-
             probabilidadInterseccion = listaProbabilidades[i] * listaProbabilidadesCondicionales[i]
             pI = tk.Label(ventanaResultados, font = (20),text = "P(A" + str(i) + "∩B) = " + str(probabilidadInterseccion) + "\n P(A" + str(i) + "∩B') = " + str(listaProbabilidades[i]-probabilidadInterseccion))
             pI.grid(row = i, column = 0, padx = 10, pady = 6)
