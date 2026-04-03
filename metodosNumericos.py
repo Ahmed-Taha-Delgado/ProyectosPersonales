@@ -32,10 +32,10 @@ def biseccion():
     for i in range(0, iteraciones): 
 
         tablai = [str(i + 1),
-                  str(round(a, redondeo)), 
-                  str(round(b, redondeo)), 
-                  str(round(float(f.subs(x, a)), redondeo)),
-                  str(round(float(f.subs(x, b)), redondeo))]
+                  str(a), 
+                  str(b), 
+                  str(float(f.subs(x, a))),
+                  str(float(f.subs(x, b)))]
         
         xm = xmf(a, b)
         if float(f.subs(x, a))*float(f.subs(x, xm)) < 0:
@@ -46,9 +46,9 @@ def biseccion():
         error = abs(xm -xa)
         xa = xm
 
-        tablaii = [str(round(xm, redondeo)),
-                  str(round(float(f.subs(x, xm)), redondeo)),
-                  str(round(error, redondeo))]
+        tablaii = [str(xm),
+                  str(float(f.subs(x, xm))),
+                  str(error)]
 
         tablai = tablai + tablaii
         tabla.append(tablai)
@@ -56,7 +56,8 @@ def biseccion():
         if error < epsilon:
             break
 
-    print(tabulate(tabla, headers=encabezados, tablefmt="grid"))    
+    formato_decimales = f".{redondeo}f"
+    print(tabulate(tabla, headers=encabezados, tablefmt="grid", floatfmt=formato_decimales))     
     print("La raiz aproximada de xm es " + str(round(xm, redondeo)))
 
 
@@ -90,10 +91,10 @@ def reglaFalsa():
     for i in range(0, iteraciones): 
 
         tablai = [str(i + 1),
-                  str(round(a, redondeo)), 
-                  str(round(b, redondeo)), 
-                  str(round(float(f.subs(x, a)), redondeo)),
-                  str(round(float(f.subs(x, b)), redondeo))]
+                  str(a), 
+                  str(b), 
+                  str(float(f.subs(x, a))),
+                  str(float(f.subs(x, b)))]
         
         xr = xrf(a, b)
         if float(f.subs(x, a))*float(f.subs(x, xr)) < 0:
@@ -104,9 +105,9 @@ def reglaFalsa():
         error = abs(xr -xa)
         xa = xr
 
-        tablaii = [str(round(xr, redondeo)),
-                  str(round(float(f.subs(x, xr)), redondeo)),
-                  str(round(error, redondeo))]
+        tablaii = [str(xr),
+                  str(float(f.subs(x, xr))),
+                  str(error)]
 
         tablai = tablai + tablaii
         tabla.append(tablai)
@@ -114,7 +115,8 @@ def reglaFalsa():
         if error < epsilon:
             break
 
-    print(tabulate(tabla, headers=encabezados, tablefmt="grid"))    
+    formato_decimales = f".{redondeo}f"
+    print(tabulate(tabla, headers=encabezados, tablefmt="grid", floatfmt=formato_decimales))     
     print("La raiz aproximada de xr es " + str(round(xr, redondeo)))
 
 
@@ -126,6 +128,9 @@ def puntoFijo():
     gx = sp.sympify(fString)
     if isinstance(gx, (list, tuple)):
         gx = gx[0]
+
+    #redondeo
+    redondeo = int(input("Ingresa los decimales a redondear: "))
 
     convergencia = input("Quieres evaluar la convergencia del metodo? (si/no): ")
 
@@ -141,8 +146,9 @@ def puntoFijo():
         #Evaluando convergencia
         tabla = []
         encabezados = ["a", "b", "g(a) (∈[a,b])", "g(b) (∈[a,b])", "|g'(a)| (∈[0,1])", "|g'(b)| (∈[0,1])"]
-        tabla = [[str(a), str(b), str(round(gx.subs(x,a),3)), str(round(gx.subs(x,b),3)), str(round(dgx.subs(x,a),3)), str(round(dgx.subs(x,b),3))]]
-        print(tabulate(tabla, headers=encabezados, tablefmt="grid"))   
+        tabla = [[str(a), str(b), str(gx.subs(x,a)), str(gx.subs(x,b)), str(dgx.subs(x,a)), str(dgx.subs(x,b))]]
+        formato_decimales = f".{redondeo}f"
+        print(tabulate(tabla, headers=encabezados, tablefmt="grid", floatfmt=formato_decimales))      
 
         if gx.subs(x,a) >= a and gx.subs(x,a) <= b and gx.subs(x,b) >= a and gx.subs(x,b) <= b and dgx.subs(x,a) >= 0 and dgx.subs(x,a) <= 1 and dgx.subs(x,b) >= 0 and dgx.subs(x,b) <= 1:
             print("El metodo converge")
@@ -154,9 +160,6 @@ def puntoFijo():
     epsilon = float(input("Ingresa epsilon: "))
     iteraciones = int(input("Ingresa las iteraciones: "))
     
-    #redondeo
-    redondeo = int(input("Ingresa los decimales a redondear: "))
-
     #Valor inicial
     x0 = int(input("Ingresa un valor inicial: "))
     
@@ -170,15 +173,16 @@ def puntoFijo():
         if i == 0 or error <= epsilon:
             return round(xi,redondeo)
 
-        xii = gx.subs(x, xi)
+        xii = float(gx.subs(x, xi))
         error = abs(xii - xi)
-        tablai = [str(iteraciones - i + 1), str(round(xii,redondeo)), str(round(error,redondeo))]
+        tablai = [iteraciones - i + 1, xii, f"{error:.{redondeo}f}"]
         tabla2.append(tablai)
 
         return puntoFijoRecursivo(xii, i - 1, iteraciones, error)
     
     xAprox = puntoFijoRecursivo(x0, iteraciones, iteraciones, error)
-    print(tabulate(tabla2, headers=encabezados2, tablefmt="grid"))   
+    formato_decimales = f".{redondeo}f"
+    print(tabulate(tabla2, headers=encabezados2, tablefmt="grid", floatfmt=formato_decimales))      
     print("El valor aproximado es " + str(xAprox))
 
 
@@ -217,15 +221,16 @@ def newtonRaphson():
         if i == 0 or error <= epsilon:
             return round(punto, redondeo)
         
-        puntoi = n.subs(x, punto)
+        puntoi = float(n.subs(x, punto))
         error = np.abs(puntoi - punto)
-        tablai = [str(iteraciones - i), str(round(puntoi, redondeo)), str(round(error, redondeo))]
+        tablai = [iteraciones - i, puntoi, f"{error:.{redondeo}f}"]
         tabla.append(tablai)
         
         return newtonRecursivo(puntoi, i - 1, iteraciones, error)
 
     xAprox = newtonRecursivo(punto, iteraciones - 1, iteraciones, error)
-    print(tabulate(tabla, headers=encabezados, tablefmt="grid"))   
+    formato_decimales = f".{redondeo}f"
+    print(tabulate(tabla, headers=encabezados, tablefmt="grid", floatfmt=formato_decimales))      
     print("El valor aproximado es " + str(xAprox))
 
 
@@ -262,8 +267,8 @@ def lin():
     for i in range(0, len(coeficientes)):
         tablasai = ["a" + str(i), coeficientes[i]]
         tablasIniciales.append(tablasai)
-    tDeltaP0 = ["Δp0", round(deltaP0, redondeo)]
-    tDeltaQ0 = ["Δq0", round(deltaQ0, redondeo)]
+    tDeltaP0 = ["Δp0", deltaP0]
+    tDeltaQ0 = ["Δq0", deltaQ0]
     tablasIniciales.append(tDeltaP0)
     tablasIniciales.append(tDeltaQ0)
 
@@ -301,23 +306,23 @@ def lin():
         if iteraciones == i:
             pi = deltaP0
             qi = deltaQ0
-            tPi.append(round(pi,redondeo))
-            tQi.append(round(qi,redondeo))
+            tPi.append(pi)
+            tQi.append(qi)
         #Si no es la primera iteraciones
         else:
             pi = tPi[-1]+tDeltaPi[-1]
             qi = tQi[-1]+tDeltaQi[-1]
-            tPi.append(round(pi,redondeo))
-            tQi.append(round(qi,redondeo))
+            tPi.append(pi)
+            tQi.append(qi)
 
         #Calculo de los bk tomando en cuenta b-1 = b-2 = 0
         for j in range(0, len(coeficientes) - 2):
             if j == 0:
-                tablaResultados[2].append(round(coeficientes[j], redondeo)) 
+                tablaResultados[2].append(coeficientes[j]) 
             elif j == 1:
-                tablaResultados[3].append(round(coeficientes[j] - tPi[-1]*tablaResultados[2][-1], redondeo))
+                tablaResultados[3].append(coeficientes[j] - tPi[-1]*tablaResultados[2][-1])
             else:
-                tablaResultados[2 + j].append(round(coeficientes[j] - tPi[-1]*tablaResultados[2 + j - 1][-1] - tQi[-1]*tablaResultados[2 + j - 2][-1], redondeo))
+                tablaResultados[2 + j].append(coeficientes[j] - tPi[-1]*tablaResultados[2 + j - 1][-1] - tQi[-1]*tablaResultados[2 + j - 2][-1])
 
         #Calculo de R, S, los delta y el error
         R = coeficientes[-2] - tPi[-1]*tablaResultados[len(coeficientes) - 1][-1] - tQi[-1]*tablaResultados[len(coeficientes) - 2][-1]
@@ -328,20 +333,20 @@ def lin():
 
         error = np.hypot(float(R), float(S))
 
-        tablaResultados[len(coeficientes)].append(round(R, redondeo))
-        tablaResultados[len(coeficientes) + 1].append(round(S, redondeo))
-        tDeltaPi.append(round(deltaPi, redondeo))
-        tDeltaQi.append(round(deltaQi, redondeo))
-        tError.append(round(error, redondeo))
+        tablaResultados[len(coeficientes)].append(R)
+        tablaResultados[len(coeficientes) + 1].append(S)
+        tDeltaPi.append(deltaPi)
+        tDeltaQi.append(deltaQi)
+        tError.append(error)
         
         return linRecursivo(error, i - 1, iteraciones)
 
     #Impresion de las tablas
     print("Tabla de datos iniciales:")
-    print(tabulate(tablasIniciales, headers=encabezados, tablefmt="grid"))   
+    formato_decimales = f".{redondeo}f"
+    print(tabulate(tablasIniciales, headers=encabezados, tablefmt="grid", floatfmt=formato_decimales))      
     print("\nTabla de iteraciones:")
     linRecursivo(1, iteraciones, iteraciones)
-    formato_decimales = f".{redondeo}f"
     print(tabulate(tablaResultados, headers=encabezados2, tablefmt="grid", floatfmt=formato_decimales)) 
     
     #Resultados
@@ -371,7 +376,63 @@ def lin():
 
 def polinomioLagrange():
 
+    #Declaramos la variable simbolica
     x = sp.symbols('x')
+    
+    #Redondeo
+    redondeo = int(input("Ingresa a cuantos decimales el redondeo: "))
+
+    #Tabla inicial
+    caso = input("Deseas ingresar la funcion o los valores evaluados de la funcion? (1/2): ")
+    puntos = int(input("Ingresa cuantos puntos tendra tu tabla: "))
+    valorInicial = float(input("Ingresa el valor inicial: "))
+    tabla = []
+    encabezados = ["x", "f(x)"]
+
+    if caso == "1":
+
+        #Recibimos la funcion
+        fString = input("Ingresa la funcion: ")
+        f = sp.sympify(fString)
+        if isinstance(f, (list, tuple)):
+            f = f[0]
+
+        #Tabla de datos
+        for i in range(0, puntos):
+            xi = float(input("Ingresa la x" + str(i+1) + ": "))
+            yi = f.subs(x, xi).evalf()
+            tablai = [xi, yi]
+            tabla.append(tablai)
+        
+    else:
+
+        #Tabla de datos
+        for i in range(0, puntos):
+            xi = float(input("Ingresa la x" + str(i+1) + ": "))
+            yi = float(input("Ingresa la y" + str(i+1) + ": "))
+            tablai = [xi, yi]
+            tabla.append(tablai)
+
+    #Interpolacion
+    interpolacion = 0
+    for i in range(0, puntos - 1):
+        productoria = 1
+
+        for j in range(0, puntos - 1):
+            if i != j:
+                # x - xj
+                numerador = valorInicial - tabla[j][0]
+                # xi - xj
+                denominador = tabla[i][0] - tabla[j][0]
+                #productoria
+                productoria *= numerador / denominador
+
+        interpolacion += tabla[i][1] * productoria
+
+    print("Tu tabla de datos: ")
+    formato_decimales = f".{redondeo}f"
+    print(tabulate(tabla, headers=encabezados, tablefmt="grid", floatfmt=formato_decimales))   
+    print("El valor de la interpolacion de Lagrange en el punto " + str(valorInicial) + " es " + str(round(float(interpolacion), redondeo)))
 
 
 opcion = -1
@@ -420,7 +481,9 @@ while(opcion != 0):
         print("\nElegiste metodo de Lin:\n")     
         lin()
 
-    #if opcion == 6:
+    if opcion == 6:
+        print("\nElegiste interpolacion de Lagrange:\n")     
+        polinomioLagrange()
 
 
         
