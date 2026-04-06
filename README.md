@@ -1,0 +1,1 @@
+Este repositorio tiene como objetivo el subir proyectos personales generales sin ser especificos de alguna materia o lenguaje, hasta ahora esta completo el programa de metodos numericos (sin tomar en cuenta errores al ingresar valores) y el programa de teorema de bayes esta incompleto aunque realiza los calculos correctamente
