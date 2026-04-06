@@ -5,7 +5,7 @@ Este repositorio tiene como objetivo almacenar mis proyectos personales. Los pro
 ## 🚀 Proyectos Actuales
 
 ### 1. Métodos Numéricos (Python)
-* **Descripción:** Implementación de diversos algoritmos de análisis numérico (incluyendo interpolación, derivación, etc.).
+* **Descripción:** Implementación de diversos algoritmos de análisis numérico (incluyendo interpolación, derivación e intergración).
 * **Nota:** Actualmente los cálculos matemáticos funcionan a la perfección, no toma en cuenta errores al ingresar valores en terminal. 
 
 ### 2. Teorema de Bayes
