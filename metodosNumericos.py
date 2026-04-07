@@ -2,25 +2,181 @@ import numpy as np
 import sympy as sp
 from tabulate import tabulate
 
+#Declaramos la variable simbolica
+x = sp.symbols('x')
+
+#funciones auxiliar para pedir datos:
+def obtenerFuncion():
+    while True:
+        fString = input("Ingresa la funcion: ")
+        try:
+            f = sp.sympify(fString)
+            if isinstance(f, (list, tuple)):
+                f = f[0]
+            f.subs(x, 1).evalf()
+            if f.free_symbols - {x}:
+                print("Error, solo puedes usar la variable 'x'")
+                continue
+            return f
+        except Exception:
+            print("Error al ingresar la funcion")
+            print("Ejemplo: Usa '2*x' en lugar de '2x', y 'x**2' en lugar de 'x^2'")
+
+def obtenerEntero(mensaje):
+    while True:
+        try:
+            return int(input(mensaje))
+        except ValueError:
+            print("Error, el numero debe ser entero")
+
+def obtenerFlotante(mensaje):
+    while True:
+        entrada = input(mensaje).strip()
+        try:
+            flotante = sp.sympify(entrada)
+        
+            if flotante.free_symbols:
+                print("Error, el numero debe ser entero o decimal")
+                continue
+                
+            # Lo evaluamos (.evalf) y lo forzamos a ser flotante de Python
+            return float(flotante.evalf())
+        except ValueError:
+            print("Error, el numero debe ser entero o decimal")
+
+def obtenerCondicionesDeParada():
+    while True:
+        try:
+            epsilon = obtenerFlotante("Ingresa epsilon (ej. 0.001): ")
+            if epsilon <= 0:
+                print("Epsilon debe ser mayor a 0")
+                continue
+            break
+        except ValueError:
+            print("Error al ingresar las condiciones de parada")
+
+    while True:
+        try:
+            iteraciones = obtenerEntero("Ingresa las iteraciones (ej. 5): ")
+            if iteraciones <= 0:
+                print("Ingresa al menos 1 iteracion")
+                continue
+            if iteraciones > 1000:
+                print("Demasiadas iteraciones")
+                continue
+            break
+        except ValueError:
+            print("Error al ingresar las condiciones de parada")
+
+    return epsilon, iteraciones
+
+def obtenerIntervalo():
+    while True:
+        try:
+            a = obtenerFlotante("Ingresa el valor de a: ")
+            b = obtenerFlotante("Ingresa el valor de b: ")
+            if a == b:
+                print("a y b no pueden ser iguales")
+                continue
+            if a > b:
+                print("a no puede ser mayor que b")
+                continue
+            return a, b
+        except ValueError:
+            print("Error al ingresar el intervalo")
+
+def obtenerRedondeo():
+    while True:
+        try:
+            redondeo = obtenerEntero("Ingresa los decimales a redondear: ")
+            if redondeo <= 0:
+                print("El redondeo debe ser de al menos un decimal")
+                continue
+            return redondeo
+        except ValueError:
+            print("Error al ingresar el redondeo")
+
+def obtenerPuntos():
+    while True:
+        try:
+            puntos = obtenerEntero("Ingresa cuantos puntos tendra tu tabla: ")
+            if puntos < 1:
+                print("Debe haber al menos 1 punto")
+                continue
+            return puntos
+        except ValueError:
+            print("Error al ingresar los puntos")
+
+def obtenerOrden():
+    while True:
+        try:
+            orden = obtenerEntero("Ingresa el orden de la derivada: ")
+            if orden < 1:
+                print("El orden debe ser al menos de 1")
+                continue
+            return orden
+        except ValueError:
+            print("Error al ingresar el orden de la derivada")
+
+def obtenerGrado():
+    while True:
+        try:
+            grado = obtenerEntero("Ingresa el grado de la cuadraturaGaussiana: ")
+            if grado < 1 or grado > 5:
+                print("El grade debe estar entre 1 y 5")
+                continue
+            return grado
+        except ValueError:
+            print("Error al ingresar el grado de la cuadratura")
+
+def obtenerPreguntaCaso(pregunta):
+    while True:
+        respuesta = input(pregunta).strip().lower()
+        if respuesta in ['si', 'sí', 's'] or respuesta == "1":
+            return "1"
+        elif respuesta in ['no', 'n'] or respuesta == "2":
+            return "2"
+        elif respuesta == "3":
+            return "3"
+        else:
+            print("Elige alguna de las opciones")
+
+def obtenerTabla(puntos, caso, f):
+    tabla = [] 
+    for i in range(0, puntos):
+        if caso == "1":
+            xi = obtenerFlotante("Ingresa la x" + str(i+1) + ": ")
+            yi = f.subs(x, xi).evalf()
+        else:
+            xi = obtenerFlotante("Ingresa la x" + str(i+1) + ": ")
+            yi = obtenerFlotante("Ingresa la y" + str(i+1) + ": ")
+        tablai = [xi, yi]
+        tabla.append(tablai)           
+    return tabla
+
+def obtenerTablaConstante(puntos, caso, f):
+
+    tabla = [] 
+    h = obtenerFlotante("Ingresa el valor de h: ")
+    x0 = obtenerFlotante("Ingresa x0: ")
+    for i in range(0, puntos):
+        xi = x0 + i*h
+        if caso == "1":
+            yi = f.subs(x, xi).evalf()
+        else:
+            yi = obtenerFlotante("Ingresa la y" + str(i+1) + ": ")
+        tablai = [xi, yi]
+        tabla.append(tablai)           
+    return tabla, h
+
+#Algoritmos numericos
 def biseccion():
-
-    #declarar la funcion
-    x = sp.symbols('x')
-    fString = input("Ingresa la funcion: ")
-    f = sp.sympify(fString)
-    if isinstance(f, (list, tuple)):
-        f = f[0]
-
-    #intervalo inicial
-    a = int(input("Ingresa el valor de a: "))
-    b = int(input("Ingresa el valor de b: "))
-
-    #condicion de parada
-    epsilon = float(input("Ingresa epsilon: "))
-    iteraciones = int(input("Ingresa las iteraciones: "))
     
-    #redondeo
-    redondeo = int(input("Ingresa los decimales a redondear: "))
+    #Recibimos datos iniciales
+    f = obtenerFuncion()
+    a, b = obtenerIntervalo()
+    epsilon, iteraciones = obtenerCondicionesDeParada()
+    redondeo = obtenerRedondeo()
 
     def xmf(a, b):
         return (a + b) / 2
@@ -31,11 +187,7 @@ def biseccion():
     encabezados = ["Iteracion", "a", "b", "f(a)", "f(b)", "xm", "f(xm)", "error"]  
     for i in range(0, iteraciones): 
 
-        tablai = [str(i + 1),
-                  str(a), 
-                  str(b), 
-                  str(float(f.subs(x, a))),
-                  str(float(f.subs(x, b)))]
+        tablai = [str(i + 1), str(a), str(b), str(float(f.subs(x, a))), str(float(f.subs(x, b)))]
         
         xm = xmf(a, b)
         if float(f.subs(x, a))*float(f.subs(x, xm)) < 0:
@@ -46,16 +198,15 @@ def biseccion():
         error = abs(xm -xa)
         xa = xm
 
-        tablaii = [str(xm),
-                  str(float(f.subs(x, xm))),
-                  str(error)]
+        tablaii = [str(xm), str(float(f.subs(x, xm))), str(error)]
 
         tablai = tablai + tablaii
         tabla.append(tablai)
 
         if error < epsilon:
             break
-
+        
+    #impresion de resultados
     formato_decimales = f".{redondeo}f"
     print(tabulate(tabla, headers=encabezados, tablefmt="grid", floatfmt=formato_decimales))     
     print("La raiz aproximada de xm es " + str(round(xm, redondeo)))
@@ -63,23 +214,11 @@ def biseccion():
 
 def reglaFalsa():
 
-    #declarar la funcion
-    x = sp.symbols('x')
-    fString = input("Ingresa la funcion: ")
-    f = sp.sympify(fString)
-    if isinstance(f, (list, tuple)):
-        f = f[0]
-
-    #intervalo inicial
-    a = int(input("Ingresa el valor de a: "))
-    b = int(input("Ingresa el valor de b: "))
-
-    #condicion de parada
-    epsilon = float(input("Ingresa epsilon: "))
-    iteraciones = int(input("Ingresa las iteraciones: "))
-    
-    #redondeo
-    redondeo = int(input("Ingresa los decimales a redondear: "))
+    #Recibimos datos iniciales
+    f = obtenerFuncion()
+    a, b = obtenerIntervalo()
+    epsilon, iteraciones = obtenerCondicionesDeParada()
+    redondeo = obtenerRedondeo()
 
     def xrf(a, b):
         return float(b - ((f.subs(x, b)*(b - a)) / (f.subs(x, b) - f.subs(x,a))))
@@ -90,11 +229,7 @@ def reglaFalsa():
     encabezados = ["Iteracion", "a", "b", "f(a)", "f(b)", "xr", "f(xr)", "error"]  
     for i in range(0, iteraciones): 
 
-        tablai = [str(i + 1),
-                  str(a), 
-                  str(b), 
-                  str(float(f.subs(x, a))),
-                  str(float(f.subs(x, b)))]
+        tablai = [str(i + 1), str(a), str(b), str(float(f.subs(x, a))), str(float(f.subs(x, b)))]
         
         xr = xrf(a, b)
         if float(f.subs(x, a))*float(f.subs(x, xr)) < 0:
@@ -105,16 +240,15 @@ def reglaFalsa():
         error = abs(xr -xa)
         xa = xr
 
-        tablaii = [str(xr),
-                  str(float(f.subs(x, xr))),
-                  str(error)]
+        tablaii = [str(xr), str(float(f.subs(x, xr))), str(error)]
 
         tablai = tablai + tablaii
         tabla.append(tablai)
 
         if error < epsilon:
             break
-
+    
+    #impresion de resultados
     formato_decimales = f".{redondeo}f"
     print(tabulate(tabla, headers=encabezados, tablefmt="grid", floatfmt=formato_decimales))     
     print("La raiz aproximada de xr es " + str(round(xr, redondeo)))
@@ -122,23 +256,18 @@ def reglaFalsa():
 
 def puntoFijo():
 
-    #Declaramos la funcion
-    x = sp.symbols('x')
-    fString = input("Ingresa la funcion despejada (g(xi)): ")
-    gx = sp.sympify(fString)
-    if isinstance(gx, (list, tuple)):
-        gx = gx[0]
+    #Recibimos datos iniciales
+    print("Para este metodo ingresa la funcion despejada")
+    gx = obtenerFuncion()
+    redondeo = obtenerRedondeo()
+    epsilon, iteraciones = obtenerCondicionesDeParada()
+    x0 = obtenerFlotante("Ingresa el valor inicial: ")
+    convergencia = obtenerPreguntaCaso("Quieres evaluar la convergencia del metodo? (si/no): ")
 
-    #redondeo
-    redondeo = int(input("Ingresa los decimales a redondear: "))
-
-    convergencia = input("Quieres evaluar la convergencia del metodo? (si/no): ")
-
-    if convergencia == "si":
+    if convergencia == "1":
         #intervalo de convergencia
         print("Ingresa un intervalo para verificar convergencia")
-        a = int(input("Ingresa a: "))
-        b = int(input("Ingresa b: "))
+        a, b = obtenerIntervalo()
 
         #Derivando g(xi)
         dgx = sp.diff(gx, x)
@@ -155,13 +284,6 @@ def puntoFijo():
         else:
             print("El metodo no converge")
             return
-        
-    #Condiciones de parada
-    epsilon = float(input("Ingresa epsilon: "))
-    iteraciones = int(input("Ingresa las iteraciones: "))
-    
-    #Valor inicial
-    x0 = int(input("Ingresa un valor inicial: "))
     
     #Tabla y funcion recursiva
     encabezados2 = ["i", "xi", "error"]
@@ -188,28 +310,17 @@ def puntoFijo():
 
 def newtonRaphson():
 
-    #Declaramos la funcion
-    x = sp.symbols('x')
-    fString = input("Ingresa la funcion: ")
-    f = sp.sympify(fString)
-    if isinstance(f, (list, tuple)):
-        f = f[0]
+    #Recibimos datos iniciales
+    f = obtenerFuncion()
+    epsilon, iteraciones = obtenerCondicionesDeParada()
+    redondeo = obtenerRedondeo()
+    punto = obtenerFlotante("Ingresa el valor inicial: ")
 
     #Derivamos
     derivada = sp.diff(f, x)
 
     #Expresion de newton-raphson
     n = x - (f/derivada)
-    
-    #Condiciones de parada
-    iteraciones = int(input("Ingresa el numero de iteraciones: "))
-    epsilon = float(input("Ingrese epsilon: "))
-
-    #redondeo
-    redondeo = int(input("Ingresa el redondeoa cuantos decimales: "))
-
-    #Valor inicial
-    punto = int(input("Ingresa el punto x0: "))
 
     #Tabla y funcion recursiva
     encabezados = ["i", "xi", "error"]
@@ -236,26 +347,17 @@ def newtonRaphson():
 
 def lin():
 
-    #Declaramos la funcion
-    x = sp.symbols('x')
-    fString = input("Ingresa el polinomio: ")
-    f = sp.sympify(fString)
-    if isinstance(f, (list, tuple)):
-        f = f[0]
-    polinomio = sp.Poly(f, x)
+    #Recibimos datos iniciales
+    f = obtenerFuncion()
+    redondeo = obtenerRedondeo()
+    epsilon, iteraciones = obtenerCondicionesDeParada()
 
-    #Datos iniciales
+    #Calculos iniciales
+    polinomio = sp.Poly(f, x)
     grado = polinomio.degree()
     coeficientes = polinomio.all_coeffs() #De mayor grado a menor grado
     deltaP0 = coeficientes[-2] / coeficientes[-3]
     deltaQ0 = coeficientes[-1] / coeficientes[-3]
-
-    #Redondeo
-    redondeo = int(input("Ingresa a cuantos decimales el redondeo: "))
-
-    #Condiciones de parada
-    iteraciones = int(input("Ingresa cuantas iteraciones: "))
-    epsilon = float(input("Ingresa epsilon: "))
 
     #Tablas iniciales
     tablasIniciales = []
@@ -361,7 +463,7 @@ def lin():
     for i in range (gradoResultante - 3, -1, -1):
         polinomioResultante2 += b[i]*(x**(gradoResultante - i - 3))
     
-    print((polinomioResultante1)*(polinomioResultante2) + b[-3]*x + b[-2])
+    print(str((polinomioResultante1)*(polinomioResultante2)) + " + " + str(+ b[-2]  + round(float(b[-3].evalf()), redondeo)*x ))
 
     #Raices
     raices = sp.solve(polinomioResultante1, x)
@@ -375,47 +477,22 @@ def lin():
 
 
 def polinomioLagrange():
-
-    #Declaramos la variable simbolica
-    x = sp.symbols('x')
     
-    #Redondeo
-    redondeo = int(input("Ingresa a cuantos decimales el redondeo: "))
+    #Recibimos datos iniciales
+    redondeo = obtenerRedondeo()
+    puntos = obtenerPuntos()
+    valorInicial = obtenerFlotante("Ingresa el punto de evaluacion: ")
 
     #Tabla inicial
-    caso = input("Deseas ingresar la funcion o los valores evaluados de la funcion? (1/2): ")
-    puntos = int(input("Ingresa cuantos puntos tendra tu tabla: "))
-    valorInicial = float(input("Ingresa el valor inicial: "))
-    tabla = []
     encabezados = ["x", "f(x)"]
+    caso = obtenerPreguntaCaso("Deseas ingresar las xi y la funcion o las (xi, yi)? (1/2): ")
 
-    if caso == "1":
-
-        #Recibimos la funcion
-        fString = input("Ingresa la funcion: ")
-        f = sp.sympify(fString)
-        if isinstance(f, (list, tuple)):
-            f = f[0]
-
-        #Tabla de datos
-        for i in range(0, puntos):
-            xi = float(input("Ingresa la x" + str(i+1) + ": "))
-            yi = f.subs(x, xi).evalf()
-            tablai = [xi, yi]
-            tabla.append(tablai)
-        
-    else:
-
-        #Tabla de datos
-        for i in range(0, puntos):
-            xi = float(input("Ingresa la x" + str(i+1) + ": "))
-            yi = float(input("Ingresa la y" + str(i+1) + ": "))
-            tablai = [xi, yi]
-            tabla.append(tablai)
+    f = obtenerFuncion() if caso == "1" else None
+    tabla = obtenerTabla(puntos, caso, f)
 
     #Interpolacion
     interpolacion = 0
-    for i in range(0, puntos ):
+    for i in range(0, puntos):
         productoria = 1
 
         for j in range(0, puntos):
@@ -443,43 +520,18 @@ def polinomioLagrange():
 
 
 def polinomioNewton():
-
-    #Declaramos la variable simbolica
-    x = sp.symbols('x')
     
-    #Redondeo
-    redondeo = int(input("Ingresa a cuantos decimales el redondeo: "))
+    #Recibimos datos iniciales
+    redondeo = obtenerRedondeo()
+    puntos = obtenerPuntos()
+    valorInicial = obtenerFlotante("Ingresa el punto de evaluacion: ")
 
     #Tabla inicial
-    caso = input("Deseas ingresar la funcion o los valores evaluados de la funcion? (1/2): ")
-    puntos = int(input("Ingresa cuantos puntos tendra tu tabla: "))
-    valorInicial = float(input("Ingresa el valor inicial: "))
-    tabla = []
+    caso = obtenerPreguntaCaso("Deseas ingresar las xi y la funcion o las xi, yi? (1/2): ")
     encabezados = ["xi", "yi"]
 
-    if caso == "1":
-
-        #Recibimos la funcion
-        fString = input("Ingresa la funcion: ")
-        f = sp.sympify(fString)
-        if isinstance(f, (list, tuple)):
-            f = f[0]
-
-        #Tabla de datos
-        for i in range(0, puntos):
-            xi = float(input("Ingresa la x" + str(i+1) + ": "))
-            yi = f.subs(x, xi).evalf()
-            tablai = [xi, yi]
-            tabla.append(tablai)
-        
-    else:
-
-        #Tabla de datos
-        for i in range(0, puntos):
-            xi = float(input("Ingresa la x" + str(i+1) + ": "))
-            yi = float(input("Ingresa la y" + str(i+1) + ": "))
-            tablai = [xi, yi]
-            tabla.append(tablai)
+    f = obtenerFuncion() if caso == "1" else None
+    tabla, h = obtenerTablaConstante(puntos, caso, f)
 
     #Diferencias
     for i in range(0, puntos - 1):
@@ -489,9 +541,7 @@ def polinomioNewton():
             deltayi = tabla[j + 1][i + 1] - tabla[j][i + 1]
             tabla[j].append(deltayi)
 
-    #Calculo de h y k
-    #h = x1 - x0
-    h = tabla[1][0] - tabla[0][0]
+    #Calculo de k
     #k = (x - x0) / h
     k = (x - tabla[0][0]) / h
 
@@ -525,43 +575,22 @@ def polinomioNewton():
 
 def derivacionNumerica():
 
-    #Declaramos la variable simbolica
-    x = sp.symbols('x')
-    
-    #Redondeo
-    redondeo = int(input("Ingresa a cuantos decimales el redondeo: "))
+    #Recibimos datos iniciales
+    redondeo = obtenerRedondeo()
+    puntos = obtenerPuntos()
+    valorInicial = obtenerFlotante("Ingresa el punto de evaluacion: ")
 
-    #Tabla inicial
-    caso = input("Deseas ingresar la funcion o los valores evaluados de la funcion? (1/2): ")
-    puntos = int(input("Ingresa cuantos puntos tendra tu tabla: "))
-    valorInicial = float(input("Ingresa el valor inicial: "))
-    tabla = []
+    #Tabla inicial o tablas iniciales
+    caso = obtenerPreguntaCaso("Deseas ingresar las xi y la funcion o las xi, yi? (1/2): ")
     encabezados = ["xi", "yi"]
 
-    if caso == "1":
+    richardson = obtenerPreguntaCaso("Deseas que tu aproximacion sea mejorada con la extrapolacion de Richardson? (si/no): ")
 
-        #Recibimos la funcion
-        fString = input("Ingresa la funcion: ")
-        f = sp.sympify(fString)
-        if isinstance(f, (list, tuple)):
-            f = f[0]
-
-        #Tabla de datos
-        for i in range(0, puntos):
-            xi = float(input("Ingresa la x" + str(i+1) + ": "))
-            yi = f.subs(x, xi).evalf()
-            tablai = [xi, yi]
-            tabla.append(tablai)
+    f = obtenerFuncion() if caso == "1" else None
+    tabla, h = obtenerTablaConstante(puntos, caso, f)
+    print("Para la tabla 2:")
+    if richardson == "1": tabla2, h2 = obtenerTablaConstante(puntos, caso, f)
         
-    else:
-
-        #Tabla de datos
-        for i in range(0, puntos):
-            xi = float(input("Ingresa la x" + str(i+1) + ": "))
-            yi = float(input("Ingresa la y" + str(i+1) + ": "))
-            tablai = [xi, yi]
-            tabla.append(tablai)
-
     #Diferencias
     for i in range(0, puntos - 1):
         encabezados.append("Δ^(" + str(i + 1) + ")yi")
@@ -569,12 +598,19 @@ def derivacionNumerica():
             #Δ^k yi = Δ^k-1 yi+1 - Δ^k yi
             deltayi = tabla[j + 1][i + 1] - tabla[j][i + 1]
             tabla[j].append(deltayi)
+    
+    if richardson == "1":
+        for i in range(0, puntos - 1):
+            for j in range(0, puntos - 1 - i):
+                #Δ^k yi = Δ^k-1 yi+1 - Δ^k yi
+                deltayi = tabla2[j + 1][i + 1] - tabla2[j][i + 1]
+                tabla2[j].append(deltayi)
 
-    #Calculo de h y k
-    #h = x1 - x0
-    h = tabla[1][0] - tabla[0][0]
+    #Calculo de k
     #k = (x - x0) / h
     k = (x - tabla[0][0]) / h
+    if richardson == "1":
+        k2 = (x - tabla2[0][0]) / h2
 
     #combinaciones
     #kCi = [k(k-1)...(k-i+1)]/i!
@@ -582,6 +618,11 @@ def derivacionNumerica():
     for i in range(1, puntos):
         combinacioni = sp.binomial(k, i)
         combinaciones.append(combinacioni)
+    if richardson == "1":
+        combinaciones2 = []
+        for i in range(1, puntos):
+            combinacioni = sp.binomial(k2, i)
+            combinaciones2.append(combinacioni)
 
     #Polinomio de newton 
     #yk = kC1Δy0 + kC2Δ^2y0 + ... + kCjΔ^jy0
@@ -591,269 +632,113 @@ def derivacionNumerica():
             interpolacion = tabla[0][1]
         else:
             interpolacion += combinaciones[i - 1] * tabla[0][i + 1]
- 
+
     interpolacion = sp.expand_func(interpolacion)
     interpolacion = sp.expand(interpolacion)
 
-    #Calculo de la derivada
-    orden = int(input("Ingresa el orden de la derivada: "))
-    derivada = sp.diff(interpolacion, x, orden)
+    if richardson == "1":
+        interpolacion2 = 0
+        for i in range(0, puntos):
+            if i == 0:
+                interpolacion2 = tabla2[0][1]
+            else:
+                interpolacion2 += combinaciones2[i - 1] * tabla2[0][i + 1]
 
+        interpolacion2 = sp.expand_func(interpolacion2)
+        interpolacion2 = sp.expand(interpolacion2)
+
+    #Calculo de la derivada
+    orden = obtenerOrden()
+    derivada = sp.diff(interpolacion, x, orden)
     aproximacion = derivada.subs(x, valorInicial)
     derivada = derivada.xreplace({n: round(n, redondeo) for n in derivada.atoms(sp.Number)})
-
+    if richardson == "1": 
+        derivada2 = sp.diff(interpolacion2, x, orden)
+        aproximacion2 = derivada2.subs(x, valorInicial)
+        derivada2 = derivada2.xreplace({n: round(n, redondeo) for n in derivada2.atoms(sp.Number)})
+    
     print("Tu tabla de datos: ")
     formato_decimales = f".{redondeo}f"
     print(tabulate(tabla, headers=encabezados, tablefmt="grid", floatfmt=formato_decimales))  
     print("Tu derivada simbolica en forma de polinomio es: " + str(derivada)) 
     print("El valor de la derivada en el punto " + str(valorInicial) + " es " + str((round(float(aproximacion), redondeo))))
-
-
-def richardson():
-
-    #Declaramos la variable simbolica
-    x = sp.symbols('x')
-    
-    #Redondeo
-    redondeo = int(input("Ingresa a cuantos decimales el redondeo: "))
-
-    #Tabla inicial
-    caso = input("Deseas ingresar la funcion o los valores evaluados de la funcion? (1/2): ")
-    puntos = int(input("Ingresa cuantos puntos tendra tu tabla: "))
-    valorInicial = float(input("Ingresa el valor inicial: "))
-    tabla1 = []
-    tabla2 = []
-    encabezados = ["xi", "yi"]
-
-    if caso == "1":
-
-        #Recibimos la funcion
-        fString = input("Ingresa la funcion: ")
-        f = sp.sympify(fString)
-        if isinstance(f, (list, tuple)):
-            f = f[0]
-
-        #Tabla de datos
-        print("Para h1")
-        for i in range(0, puntos):
-            xi = float(input("Ingresa la x" + str(i+1) + ": "))
-            yi = f.subs(x, xi).evalf()
-            tablai = [xi, yi]
-            tabla1.append(tablai)
-        
-        print("Para h2")
-        for i in range(0, puntos):
-            xi = float(input("Ingresa la x" + str(i+1) + ": "))
-            yi = f.subs(x, xi).evalf()
-            tablai = [xi, yi]
-            tabla2.append(tablai)
-
-    else:
-
-        #Tabla de datos
-        print("Para h1")
-        for i in range(0, puntos):
-            xi = float(input("Ingresa la x" + str(i+1) + ": "))
-            yi = float(input("Ingresa la y" + str(i+1) + ": "))
-            tablai = [xi, yi]
-            tabla1.append(tablai)
-
-        print("Para h2")
-        for i in range(0, puntos):
-            xi = float(input("Ingresa la x" + str(i+1) + ": "))
-            yi = float(input("Ingresa la y" + str(i+1) + ": "))
-            tablai = [xi, yi]
-            tabla2.append(tablai)
-
-    #Diferencias
-    for i in range(0, puntos - 1):
-        encabezados.append("Δ^(" + str(i + 1) + ")yi")
-        for j in range(0, puntos - 1 - i):
-            #Δ^k yi = Δ^k-1 yi+1 - Δ^k yi
-            deltayi = tabla1[j + 1][i + 1] - tabla1[j][i + 1]
-            tabla1[j].append(deltayi)
-    
-    for i in range(0, puntos - 1):
-        encabezados.append("Δ^(" + str(i + 1) + ")yi")
-        for j in range(0, puntos - 1 - i):
-            #Δ^k yi = Δ^k-1 yi+1 - Δ^k yi
-            deltayi = tabla2[j + 1][i + 1] - tabla2[j][i + 1]
-            tabla2[j].append(deltayi)
-
-    #Calculo de h y k
-    #h = x1 - x0
-    h1 = tabla1[1][0] - tabla1[0][0]
-    h2 = tabla2[1][0] - tabla2[0][0]
-    #k = (x - x0) / h
-    k1 = (x - tabla1[0][0]) / h1
-    k2= (x - tabla2[0][0]) / h2
-
-    #combinaciones
-    #kCi = [k(k-1)...(k-i+1)]/i!
-    combinaciones1 = []
-    for i in range(1, puntos):
-        combinacioni = sp.binomial(k1, i)
-        combinaciones1.append(combinacioni)
-    
-    combinaciones2 = []
-    for i in range(1, puntos):
-        combinacioni = sp.binomial(k2, i)
-        combinaciones2.append(combinacioni)
-
-    #Polinomio de newton 
-    #yk = kC1Δy0 + kC2Δ^2y0 + ... + kCjΔ^jy0
-    interpolacion1 = 0
-    for i in range(0, puntos):
-        if i == 0:
-            interpolacion1 = tabla1[0][1]
-        else:
-            interpolacion1 += combinaciones1[i - 1] * tabla1[0][i + 1]
-
-    interpolacion2 = 0
-    for i in range(0, puntos):
-        if i == 0:
-            interpolacion2 = tabla2[0][1]
-        else:
-            interpolacion2 += combinaciones2[i - 1] * tabla2[0][i + 1]
+    if richardson == "1":
+        print("Tu segunda tabla de datos (h2): ")
+        print(tabulate(tabla2, headers=encabezados, tablefmt="grid", floatfmt=formato_decimales))  
+        print("Tu derivada simbolica en forma de polinomio es: " + str(derivada2)) 
+        print("El valor de la derivada en el punto " + str(valorInicial) + " es " + str((round(float(aproximacion2), redondeo))))
+        mejora = derivada2 + (derivada2 - derivada) / (((h/h2)**2) - 1)
+        print("\nEl valor de la derivada mejorada con Richardson es " + str((round(float(mejora.subs(x, valorInicial)), redondeo))))
  
-    interpolacion1 = sp.expand_func(interpolacion1)
-    interpolacion1 = sp.expand(interpolacion1)
-
-    interpolacion2 = sp.expand_func(interpolacion2)
-    interpolacion2 = sp.expand(interpolacion2)
-
-    #Calculo de la derivada
-    orden = int(input("Ingresa el orden de la derivada: "))
-    derivada1 = sp.diff(interpolacion1, x, orden)
-    derivada2 = sp.diff(interpolacion2, x, orden)
-
-    aproximacion1 = derivada1.subs(x, valorInicial)
-    aproximacion2 = derivada2.subs(x, valorInicial)
-
-    derivada = derivada2 + (derivada2 - derivada1) / (((h1/h2)**2) - 1)
-    derivada = sp.expand(derivada)
-    aproximacion = derivada.subs(x, valorInicial)
-
-    derivada = derivada.xreplace({n: round(n, redondeo) for n in derivada.atoms(sp.Number)})
-
-    formato_decimales = f".{redondeo}f"
-    print("Tabla de h1:")
-    print(tabulate(tabla1, headers=encabezados, tablefmt="grid", floatfmt=formato_decimales))  
-    print("Tabla de h2:")
-    print(tabulate(tabla2, headers=encabezados, tablefmt="grid", floatfmt=formato_decimales))  
-    print("El valor de Dh1 es " + str(round(aproximacion1, redondeo)) + ", el valor de Dh2 es " + str(round(aproximacion2, redondeo)))
-    print("Tu derivada mejorada simbolica en forma de polinomio es: " + str(derivada)) 
-    print("El valor de la derivada mejorada en el punto " + str(valorInicial) + " es " + str((round(float(aproximacion), redondeo))))
-
 
 def integracionNumerica():
 
-    #Declaramos la funcion
-    x = sp.symbols('x')
-
-    #Intervalo de integracion
-    a = float(input("Ingresa el valor de a: "))
-    b = float(input("Ingresa el valor de b: "))
-
-    #redondeo
-    redondeo = int(input("Ingresa el redondeo a cuantos decimales: "))
+    #Recibimos datos iniciales
+    redondeo = obtenerRedondeo()
+    puntos = obtenerPuntos()
 
     #Tabla 
-    encabezados = ["i", "xi", "yi"]
-    tabla = []
+    encabezados = ["xi", "yi"]
+    caso = obtenerPreguntaCaso("Deseas ingresar la funcion o los valores evaluados de la funcion? (1/2): ")
 
-    #Tabla inicial
-    caso = input("Deseas ingresar la funcion o los valores evaluados de la funcion? (1/2): ")
-    puntos = int(input("Ingresa cuantos puntos tendra tu tabla: "))
+    f = obtenerFuncion() if caso == "1" else None
+    tabla, h = obtenerTablaConstante(puntos, caso, f)
 
-    if caso == "1":
-
-        #Recibimos la funcion
-        fString = input("Ingresa la funcion: ")
-        f = sp.sympify(fString)
-        if isinstance(f, (list, tuple)):
-            f = f[0]
-
-        #Tabla de datos
-        for i in range(0, puntos):
-            xi = float(input("Ingresa la x" + str(i+1) + ": "))
-            yi = f.subs(x, xi).evalf()
-            tablai = [i, xi, yi]
-            tabla.append(tablai)
-        
-    else:
-
-        #Tabla de datos
-        for i in range(0, puntos):
-            xi = float(input("Ingresa la x" + str(i+1) + ": "))
-            yi = float(input("Ingresa la y" + str(i+1) + ": "))
-            tablai = [i, xi, yi]
-            tabla.append(tablai)
-
-    h = tabla[1][1] - tabla[0][1]
-    formula = input("Quieres aproximar con integracion trapecial, Simpson 1/3 o Simpson 3/8? (1/2/3): ")
+    h = tabla[1][0] - tabla[0][0]
+    formula = obtenerPreguntaCaso("Quieres aproximar con integracion trapecial, Simpson 1/3 o Simpson 3/8? (1/2/3): ")
 
     integral = 0
     #trapecial
     if formula == "1":
         #y0 + yn
-        integral =  tabla[0][2] + tabla[-1][2]
+        integral =  tabla[0][1] + tabla[-1][1]
         #2sum(yi)
         for i in range(1, puntos - 1):
-            integral += 2*tabla[i][2]
+            integral += 2*tabla[i][1]
         #h/2
         integral *= h / 2
 
     #simpson 1/3
     elif formula == "2":
         #y0 + yn
-        integral =  tabla[0][2] + tabla[-1][2]
+        integral =  tabla[0][1] + tabla[-1][1]
         #4sum(yimpar)+2sum(ypar)
         for i in range(1, puntos - 1):
             if i % 2 == 0:
-                integral += 2*tabla[i][2]
+                integral += 2*tabla[i][1]
             else:
-                integral += 4*tabla[i][2]
+                integral += 4*tabla[i][1]
         #h/3
         integral *= h / 3
     
     #simpson 3/8
     elif formula == "3":
         #y0 + yn
-        integral =  tabla[0][2] + tabla[-1][2]
+        integral =  tabla[0][1] + tabla[-1][1]
         #2sum(ymult3)+3sum(yrestante)
         for i in range(1, puntos - 1):
             if i % 3 == 0:
-                integral += 2*tabla[i][2]
+                integral += 2*tabla[i][1]
             else:
-                integral += 3*tabla[i][2]
+                integral += 3*tabla[i][1]
         #3h/8
         integral *= (3 * h) / 8
 
     print("Tu tabla de datos: ")
     formato_decimales = f".{redondeo}f"
     print(tabulate(tabla, headers=encabezados, tablefmt="grid", floatfmt=formato_decimales))  
-    print("El valor aproximado de tu integral en el intervalo ["+ str(a) + ", " + str(b) + "] es " + str(round(integral, redondeo)))
+    print("El valor aproximado de tu integral en el intervalo [" + str(tabla[0][0]) + ", " + str(tabla[-1][0]) + "] es " + str(round(integral, redondeo)))
 
 
 def integracionGaussiana():
     
-    #Declaramos la funcion
-    x = sp.symbols('x')
-    fString = input("Ingresa la funcion: ")
-    f = sp.sympify(fString)
-    if isinstance(f, (list, tuple)):
-        f = f[0]
-
-    #Intervalo de integracion
-    a = float(input("Ingresa el valor de a: "))
-    b = float(input("Ingresa el valor de b: "))
-
-    #redondeo
-    redondeo = int(input("Ingresa el redondeoa cuantos decimales: "))
+    #Recibimos datos iniciales
+    f = obtenerFuncion()
+    a, b = obtenerIntervalo()
+    redondeo = obtenerRedondeo()
 
     #grado
-    grado = int(input("Ingresa el grado de la cuadratura: "))
+    grado = obtenerGrado()
 
     #Tabla de cuadratura
     tablaGauss = [
@@ -876,7 +761,6 @@ def integracionGaussiana():
     print("El valor aproximado de tu integral en el intervalo ["+ str(a) + ", " + str(b) + "] es " + str(round(integral, redondeo)))
 
 
-
 opcion = -1
 while(opcion != 0):
 
@@ -890,62 +774,60 @@ while(opcion != 0):
     print("5- Metodo de Lin")
     print("6- Interpolacion con Polinomios de Lagrange")
     print("7- Interpolacion con Polinomios de Newton")
-    print("8- Derivacion numerica con polinomios de Newton")
-    print("9- Extrapolacion de Richardson")
-    print("10- Integracion numerica (Trapecial, S.1/3, S.3/8)")
-    print("11- Integracion numerica por Cuadratura Gaussiana")
+    print("8- Derivacion numerica con polinomios de Newton + Extrapolacion de Richardson")
+    print("9- Integracion numerica (Trapecial, S.1/3, S.3/8)")
+    print("10- Integracion numerica por Cuadratura Gaussiana")
     print("0- Salir")
     print("----------------------------------------")
     
-    opcion = int(input("Ingresa una opcion: "))
+    opcion = obtenerEntero("Ingresa una opcion: ")
 
     if opcion == 0:
         print("Saliendoooooo.....")
 
-    if opcion == 1:
+    elif opcion == 1:
         print("\nElegiste método de bisección:\n")
         biseccion()
 
-    if opcion == 2:
+    elif opcion == 2:
         print("\nElegiste metodo de regla falsa:\n")
         reglaFalsa()
     
-    if opcion == 3:
+    elif opcion == 3:
         print("\nElegiste metodo de punto fijo:\n")
         puntoFijo()
 
 
-    if opcion == 4:
+    elif opcion == 4:
         print("\nElegiste metodo de Newton-Raphson:\n")     
         newtonRaphson()
 
 
-    if opcion == 5:
+    elif opcion == 5:
         print("\nElegiste metodo de Lin:\n")     
         lin()
 
-    if opcion == 6:
+    elif opcion == 6:
         print("\nElegiste interpolacion de Lagrange:\n")     
         polinomioLagrange()
 
-    if opcion == 7:
+    elif opcion == 7:
         print("\nElegiste interpolacion de Newton:\n")     
         polinomioNewton()
 
-    if opcion == 8:
+    elif opcion == 8:
         print("\nElegiste Derivacion Numerica:\n")     
         derivacionNumerica()
 
-    if opcion == 9:
-        print("\nElegiste Extrapolacion de Richardson:\n")     
-        richardson()
-
-    if opcion == 10:
+    elif opcion == 9:
         print("\nElegiste Integracion Numerica:\n")     
         integracionNumerica()
     
-    if opcion == 11:
+    elif opcion == 10:
         print("\nElegiste Integracion por Cuadratura Gaussiana:\n")     
         integracionGaussiana()
+    
+    else:
+        print("Ingresa el numero de alguna opcion")
 
         
