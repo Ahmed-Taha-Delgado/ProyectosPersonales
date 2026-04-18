@@ -5,6 +5,7 @@ from tabulate import tabulate
 #Declaramos la variable simbolica
 x = sp.symbols('x')
 y = sp.symbols('y')
+t = sp.symbols('t')
 
 #funciones auxiliar para pedir datos:
 def obtenerFuncion():
@@ -89,7 +90,7 @@ def obtenerEpsilon():
     return epsilon
 
 def obtenerCondicionesDeParada():
-    return obtenerIteraciones(), obtenerEpsilon()
+    return obtenerEpsilon(), obtenerIteraciones()
 
 def obtenerIntervalo():
     while True:
@@ -189,6 +190,45 @@ def obtenerTablaConstante(puntos, caso, f):
         tablai = [xi, yi]
         tabla.append(tablai)           
     return tabla, h
+
+def obtenerSistemaEcuacionesDiferenciales():
+    #Datos iniciales
+    print("Toma en cuenta los siguientes cambios de variable: ")
+    print("x → t (variable independiente)")
+    print("y' → ẋ")
+
+    orden = obtenerOrden()
+    print("Convierte tu ED de orden n en un sistema de ecuaciones de orden n")
+    print("Ingresaras los componentes de tu vector: ")
+    #Crear n variables dimamicas
+    
+    variables = sp.symbols(f'x1:{orden+1}')
+    diccionarioVariables = {'t': t}
+    for i in range(orden):
+        diccionarioVariables[f'x{i+1}'] = variables[i]
+
+    sistema = []
+    for i in range(orden):
+        while True:
+            fString = input(f"Ingresa ẋ{i+1} = ")
+            try:
+                f = sp.sympify(fString, locals=diccionarioVariables)
+                simbolosIngresados = f.free_symbols
+                simbolosPermitidos = set(variables) | {t}
+                
+                if  simbolosIngresados - simbolosPermitidos:
+                    print("Error: Usaste una letra que no está permitida")
+                    print("Puedes usar 't' y las 'xi' correspondientes")
+                    continue
+                    
+                sistema.append(f)
+                break                 
+            except Exception:
+                print("Error al ingresar la funcion")
+                print("Ejemplo: Usa '2*x' en lugar de '2x', y 'x**2' en lugar de 'x^2'")
+
+    return orden,variables, sistema
+
 
 #Algoritmos numericos
 def biseccion():
@@ -781,7 +821,6 @@ def integracionGaussiana():
 
     print("El valor aproximado de tu integral en el intervalo ["+ str(a) + ", " + str(b) + "] es " + str(round(integral, redondeo)))
 
-
 def RK():
     
     #Formulas de RK
@@ -831,6 +870,32 @@ def RK():
             yTabla.append(yi)
         return yTabla
     
+    def EDAnalitica(f, x0, y0):
+
+        #Construimos la ED
+        funcion = sp.Function('y')(x) 
+        fResolver = f.subs(y, funcion)
+        ED = sp.Eq(funcion.diff(x), fResolver)
+        
+        #Intentamos resoverla
+        try:
+            condicionesIniciales = {funcion.subs(x, x0): y0}
+            solucion = sp.dsolve(ED, funcion, ics=condicionesIniciales, simplify=False)
+            print("\nTu ED si tiene solucion analitica")
+            return solucion.rhs
+        except NotImplementedError:
+            print("\nSympy no pudo resolver esta ED analiticamente")
+            return None
+
+    def SolAnalitica(xi, i, fA):
+        yTabla = []
+        for _ in range(0, i+1):
+            yi = fA.subs({x: xi})
+            xi = xi + h
+            yTabla.append(yi)
+        return yTabla
+
+
     #recibimos la ED
     print("Acomoda tu ED de la forma y'=f(x,y)")
     f = obtenerFuncionDosVariables()
@@ -851,23 +916,206 @@ def RK():
     redondeo = obtenerRedondeo()
     iteraciones = obtenerIteraciones()
 
+    #Intentando resolver analiticamente
+    analitica = EDAnalitica(f, x0, y0   )
+
     #tabla
     tabla = []
     encabezados = ["x", "yRK1", "yRK2", "yRK3", "yRK4"]
+    #Si tiene solucion analitica, la obtenemos 
+    if analitica != None: 
+        encabezados.extend(["yA", "eRK1", "eRK2", "eRK3", "eRK4"])
+        tYA = SolAnalitica(x0, y0, iteraciones, analitica)
+
     tRK1 = RK1(y0, x0, h, iteraciones, f)
     tRK2 = RK2(y0, x0, h, iteraciones, f)
     tRK3 = RK3(y0, x0, h, iteraciones, f)
     tRK4 = RK4(y0, x0, h, iteraciones, f)
     for i in range (0, iteraciones+1):
-
         tablai = [x0 + i*h, tRK1[i], tRK2[i], tRK3[i], tRK4[i]]
+        #Con la solucion analitica comparamos los resultados de RK
+        if analitica != None:
+            tablai.extend([tYA[i], abs(tYA[i]-tRK1[i]), abs(tYA[i]-tRK2[i]), abs(tYA[i]-tRK3[i]), abs(tYA[i]-tRK4[i])])
         tabla.append(tablai)
 
     print("Tu tabla de datos: ")
     formato_decimales = f".{redondeo}f"
     print(tabulate(tabla, headers=encabezados, tablefmt="grid", floatfmt=formato_decimales))  
   
+def RKVectorial():
 
+    #Formulas de RK
+    def RK1(xi, ti, h, iteraciones, sistema, orden):
+        tabla = []
+        tabla.append(list(xi))
+        for _ in range (iteraciones):
+            #Agregamos a un diccionario, los valores de las variables del vector
+            diccionarioK1 = {t: ti}
+            for i in range(0, orden):
+                diccionarioK1[variables[i]] = xi[i]
+            #Calculamos k1
+            k1 = []
+            for i in range(0, orden):
+                k1.append(h * float(sistema[i].subs(diccionarioK1)))
+            #Calculamos xi+1
+            for i in range(0, orden):
+                xi[i] = xi[i] + k1[i]
+            #Incrementamos ti
+            ti = ti + h
+            tabla.append(list(xi))
+        return tabla
+
+    def RK2(xi, ti, h, iteraciones, sistema, orden):
+        tabla = []
+        tabla.append(list(xi))
+        for _ in range (iteraciones):
+            #Crearemos un diccionario para cada k, modificando sus valores de evaluacion
+            diccionarioK1 = {t: ti}
+            for i in range(0, orden):
+                diccionarioK1[variables[i]] = xi[i]
+            #Calculamos k1
+            k1 = []
+            for i in range(0, orden):
+                k1.append(h * float(sistema[i].subs(diccionarioK1)))
+            
+            #Para k2
+            diccionarioK2 = {t: ti + h}
+            for i in range(0, orden):
+                diccionarioK2[variables[i]] = xi[i] + k1[i]
+            k2 = []
+            for i in range(0, orden):
+                k2.append(h * float(sistema[i].subs(diccionarioK2)))
+
+            #Calculamos xi+1
+            for i in range(0, orden):
+                xi[i] = xi[i] + (1/2)*(k1[i]+k2[i])
+            #Incrementamos ti
+            ti = ti + h
+            tabla.append(list(xi))
+        return tabla
+
+    def RK3(xi, ti, h, iteraciones, sistema, orden):
+        tabla = []
+        tabla.append(list(xi))
+        for _ in range (iteraciones):
+            #Crearemos un diccionario para cada k, modificando sus valores de evaluacion
+            diccionarioK1 = {t: ti}
+            for i in range(0, orden):
+                diccionarioK1[variables[i]] = xi[i]
+            #Calculamos k1
+            k1 = []
+            for i in range(0, orden):
+                k1.append(h * float(sistema[i].subs(diccionarioK1)))
+            
+            #Para k2
+            diccionarioK2 = {t: ti + 0.5 * h}
+            for i in range(0, orden):
+                diccionarioK2[variables[i]] = xi[i] + 0.5 * k1[i]
+            k2 = []
+            for i in range(0, orden):
+                k2.append(h * float(sistema[i].subs(diccionarioK2)))
+
+            #Para k3
+            diccionarioK3 = {t: ti + h}
+            for i in range(0, orden):
+                diccionarioK3[variables[i]] = xi[i] - k1[i] + 2*k2[i]
+            k3 = [] 
+            for i in range(0, orden):
+                k3.append(h * float(sistema[i].subs(diccionarioK3)))
+
+            #Calculamos xi+1
+            for i in range(0, orden):
+                xi[i] = xi[i] + (1/6)*(k1[i] + 4*k2[i] + k3[i])
+            #Incrementamos ti
+            ti = ti + h
+            tabla.append(list(xi))
+        return tabla
+
+    def RK4(xi, ti, h, iteraciones, sistema, orden):
+        tabla = []
+        tabla.append(list(xi))
+        for _ in range (iteraciones):
+            #Crearemos un diccionario para cada k, modificando sus valores de evaluacion
+            diccionarioK1 = {t: ti}
+            for i in range(0, orden):
+                diccionarioK1[variables[i]] = xi[i]
+            #Calculamos k1
+            k1 = []
+            for i in range(0, orden):
+                k1.append(h * float(sistema[i].subs(diccionarioK1)))
+            
+            #Para k2
+            diccionarioK2 = {t: ti + 0.5*h}
+            for i in range(0, orden):
+                diccionarioK2[variables[i]] = xi[i] + 0.5 * k1[i]
+            k2 = []
+            for i in range(0, orden):
+                k2.append(h * float(sistema[i].subs(diccionarioK2)))
+
+            #Para k3
+            diccionarioK3 = {t: ti + 0.5*h}
+            for i in range(0, orden):
+                diccionarioK3[variables[i]] = xi[i] + 0.5*k2[i]
+            k3 = [] 
+            for i in range(0, orden):
+                k3.append(h * float(sistema[i].subs(diccionarioK3)))
+            
+            #Para k4
+            diccionarioK4 = {t: ti + h}
+            for i in range(0, orden):
+                diccionarioK4[variables[i]] = xi[i] + k3[i]
+            k4 = [] 
+            for i in range(0, orden):
+                k4.append(h * float(sistema[i].subs(diccionarioK4)))
+
+            #Calculamos xi+1
+            for i in range(0, orden):
+                xi[i] = xi[i] + (1/6)*(k1[i] + 2*k2[i] + 2*k3[i]+ k4[i])
+            #Incrementamos ti
+            ti = ti + h
+            tabla.append(list(xi))
+        return tabla
+
+    #Datos iniciales
+    orden, variables, sistema = obtenerSistemaEcuacionesDiferenciales()
+
+    print("Por ahora solo hay hasta RK4")
+
+    #Datos iniciales
+    print("Ingresa las condiciones iniciales")
+    t0 = obtenerFlotante("Ingresa t0: ")
+    xIniciales = []
+    #Vector inicial
+    for i in range(0, orden):
+        xi = obtenerFlotante("Ingresa x"+str(i+1) + " en t0: " )
+        xIniciales.append(xi)
+        
+    h = abs(obtenerFlotante("Ingresa el valor de h: "))
+    redondeo = obtenerRedondeo()
+    iteraciones = obtenerIteraciones()
+
+    tRK1 = RK1(list(xIniciales), t0, h, iteraciones, sistema, orden)
+    tRK2 = RK2(list(xIniciales), t0, h, iteraciones, sistema, orden)
+    tRK3 = RK3(list(xIniciales), t0, h, iteraciones, sistema, orden)
+    tRK4 = RK4(list(xIniciales), t0, h, iteraciones, sistema, orden)
+    
+    #tabla
+    tabla = []
+    encabezados = ["t", "xRK1", "xRK2", "xRK3", "xRK4"]
+   
+    for i in range (0, iteraciones+1):
+        vr1 = [round(num, redondeo) for num in tRK1[i]]
+        vr2 = [round(num, redondeo) for num in tRK2[i]]
+        vr3 = [round(num, redondeo) for num in tRK3[i]]
+        vr4 = [round(num, redondeo) for num in tRK4[i]]
+        tablai = [t0 + i*h, vr1, vr2, vr3, vr4]
+        tabla.append(tablai)
+
+    print("Tu tabla de datos: ")
+    formato_decimales = f".{redondeo}f"
+    print(tabulate(tabla, headers=encabezados, tablefmt="grid", floatfmt=formato_decimales))  
+
+    
 opcion = -1
 while(opcion != 0):
 
@@ -942,7 +1190,7 @@ while(opcion != 0):
     
     elif opcion == 12:
         print("\nElegiste Metodo de Runge-Kutta vectorial:\n")     
-        
+        RKVectorial()
     
     else:
         print("Ingresa el numero de alguna opcion")
