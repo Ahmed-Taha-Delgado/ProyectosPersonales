@@ -4,18 +4,35 @@ from tabulate import tabulate
 
 #Declaramos la variable simbolica
 x = sp.symbols('x')
+y = sp.symbols('y')
 
 #funciones auxiliar para pedir datos:
 def obtenerFuncion():
     while True:
-        fString = input("Ingresa la funcion: ")
+        fString = input("Ingresa la funcion f(x): ")
         try:
-            f = sp.sympify(fString)
+            f = sp.sympify(fString, locals={'x': x})
             if isinstance(f, (list, tuple)):
                 f = f[0]
             f.subs(x, 1).evalf()
             if f.free_symbols - {x}:
                 print("Error, solo puedes usar la variable 'x'")
+                continue
+            return f
+        except Exception:
+            print("Error al ingresar la funcion")
+            print("Ejemplo: Usa '2*x' en lugar de '2x', y 'x**2' en lugar de 'x^2'")
+
+def obtenerFuncionDosVariables():
+    while True:
+        fString = input("Ingresa la funcion f(x,y): ")
+        try:
+            f = sp.sympify(fString, locals={'x': x, 'y': y})
+            if isinstance(f, (list, tuple)):
+                f = f[0]
+
+            if f.free_symbols - {x, y}:
+                print("Error, solo puedes usar las variables 'x' y 'y")
                 continue
             return f
         except Exception:
@@ -44,17 +61,7 @@ def obtenerFlotante(mensaje):
         except ValueError:
             print("Error, el numero debe ser entero o decimal")
 
-def obtenerCondicionesDeParada():
-    while True:
-        try:
-            epsilon = obtenerFlotante("Ingresa epsilon (ej. 0.001): ")
-            if epsilon <= 0:
-                print("Epsilon debe ser mayor a 0")
-                continue
-            break
-        except ValueError:
-            print("Error al ingresar las condiciones de parada")
-
+def obtenerIteraciones():
     while True:
         try:
             iteraciones = obtenerEntero("Ingresa las iteraciones (ej. 5): ")
@@ -67,8 +74,22 @@ def obtenerCondicionesDeParada():
             break
         except ValueError:
             print("Error al ingresar las condiciones de parada")
+    return iteraciones
 
-    return epsilon, iteraciones
+def obtenerEpsilon():
+    while True:
+        try:
+            epsilon = obtenerFlotante("Ingresa epsilon (ej. 0.001): ")
+            if epsilon <= 0:
+                print("Epsilon debe ser mayor a 0")
+                continue
+            break
+        except ValueError:
+            print("Error al ingresar las condiciones de parada")
+    return epsilon
+
+def obtenerCondicionesDeParada():
+    return obtenerIteraciones(), obtenerEpsilon()
 
 def obtenerIntervalo():
     while True:
@@ -157,7 +178,7 @@ def obtenerTabla(puntos, caso, f):
 def obtenerTablaConstante(puntos, caso, f):
 
     tabla = [] 
-    h = obtenerFlotante("Ingresa el valor de h: ")
+    h = abs(obtenerFlotante("Ingresa el valor de h: "))
     x0 = obtenerFlotante("Ingresa x0: ")
     for i in range(0, puntos):
         xi = x0 + i*h
@@ -761,6 +782,92 @@ def integracionGaussiana():
     print("El valor aproximado de tu integral en el intervalo ["+ str(a) + ", " + str(b) + "] es " + str(round(integral, redondeo)))
 
 
+def RK():
+    
+    #Formulas de RK
+    def RK1(yi, xi, h, i, f):
+        yTabla = []
+        yTabla.append(yi)
+        for _ in range (0, i):
+            k1 = h * float(f.subs({x: xi, y: yi}))
+            yi = yi + k1
+            xi = xi + h
+            yTabla.append(yi)
+        return yTabla
+
+    def RK2(yi, xi, h, i, f):
+        yTabla = []
+        yTabla.append(yi)
+        for _ in range (0, i):
+            k1 = h * float(f.subs({x: xi, y: yi}))
+            k2 = h * float(f.subs({x: xi + h, y: yi + k1}))
+            yi = yi + (1/2) * (k1 + k2)
+            xi = xi + h
+            yTabla.append(yi)
+        return yTabla
+
+    def RK3(yi, xi, h, i, f):
+        yTabla = []
+        yTabla.append(yi)
+        for _ in range (0, i):
+            k1 = h * float(f.subs({x: xi, y: yi}))
+            k2 = h * float(f.subs({x: xi + 0.5*h, y: yi + 0.5*k1}))
+            k3 = h * float(f.subs({x: xi + h, y: yi - k1 + 2*k2}))
+            yi = yi + (1/6) * (k1 + 4*k2 + k3)
+            xi = xi + h
+            yTabla.append(yi)
+        return yTabla
+
+    def RK4(yi, xi, h, i, f):
+        yTabla = []
+        yTabla.append(yi)
+        for _ in range (0, i):
+            k1 = h * float(f.subs({x: xi, y: yi}))
+            k2 = h * float(f.subs({x: xi + 0.5*h, y: yi + 0.5*k1}))
+            k3 = h * float(f.subs({x: xi + 0.5*h, y: yi + 0.5*k2}))
+            k4 = h * float(f.subs({x: xi + h, y: yi + k3})) 
+            yi = yi + (1/6) * (k1 + 2*(k2 + k3) + k4)
+            xi = xi + h
+            yTabla.append(yi)
+        return yTabla
+    
+    #recibimos la ED
+    print("Acomoda tu ED de la forma y'=f(x,y)")
+    f = obtenerFuncionDosVariables()
+
+    print("Por ahora solo hay hasta RK4")
+    #orden = 0
+    #while orden > 4:
+    #    orden = obtenerOrden()
+    #    if orden > 4:
+    #        print("Solo he programado hasta RK4 :(")
+
+    #Datos iniciales
+    print("Ingresa las condiciones iniciales")
+    y0 = obtenerFlotante("Ingresa y0: ")
+    x0 = obtenerFlotante("Ingresa x0: ")
+
+    h = abs(obtenerFlotante("Ingresa el valor de h: "))
+    redondeo = obtenerRedondeo()
+    iteraciones = obtenerIteraciones()
+
+    #tabla
+    tabla = []
+    encabezados = ["x", "yRK1", "yRK2", "yRK3", "yRK4"]
+    tRK1 = RK1(y0, x0, h, iteraciones, f)
+    tRK2 = RK2(y0, x0, h, iteraciones, f)
+    tRK3 = RK3(y0, x0, h, iteraciones, f)
+    tRK4 = RK4(y0, x0, h, iteraciones, f)
+    for i in range (0, iteraciones+1):
+
+        tablai = [x0 + i*h, tRK1[i], tRK2[i], tRK3[i], tRK4[i]]
+        tabla.append(tablai)
+
+    print("Tu tabla de datos: ")
+    formato_decimales = f".{redondeo}f"
+    print(tabulate(tabla, headers=encabezados, tablefmt="grid", floatfmt=formato_decimales))  
+  
+
 opcion = -1
 while(opcion != 0):
 
@@ -777,6 +884,8 @@ while(opcion != 0):
     print("8- Derivacion numerica con polinomios de Newton + Extrapolacion de Richardson")
     print("9- Integracion numerica (Trapecial, S.1/3, S.3/8)")
     print("10- Integracion numerica por Cuadratura Gaussiana")
+    print("11- Runge-Kutta para ecuaciones diferenciales de orden 1")
+    print("12- Runge-Kutta para ecuaciones diferenciales de orden n")
     print("0- Salir")
     print("----------------------------------------")
     
@@ -826,6 +935,14 @@ while(opcion != 0):
     elif opcion == 10:
         print("\nElegiste Integracion por Cuadratura Gaussiana:\n")     
         integracionGaussiana()
+
+    elif opcion == 11:
+        print("\nElegiste metodo de Runge-Kutta:\n")     
+        RK()
+    
+    elif opcion == 12:
+        print("\nElegiste Metodo de Runge-Kutta vectorial:\n")     
+        
     
     else:
         print("Ingresa el numero de alguna opcion")
